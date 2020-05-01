@@ -1,0 +1,16 @@
+#!/usr/bin/env Rscript
+
+#Load the following data (Note use BiocManager::Install())
+library(genefu)
+data(sig.gene70)
+dim(sig.gene70)
+head(sig.gene70)[,1:6]
+
+#How many components of the signature have a missing value (NA) for the associated NCBI gene symbol?
+sum(is.na(sig.gene70$NCBI.gene.symbol))
+
+#What is the NCBI gene symbol for the gene with the Description "cyclin E2"?
+sig.gene70$NCBI.gene.symbol[which(sig.gene70$Description == "cyclin E2")]
+
+#How many of the members of the 70-gene signature are genes coding for kinases?
+length(grep("kinase", sig.gene70$Description))
