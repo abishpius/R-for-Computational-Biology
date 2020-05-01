@@ -32,3 +32,15 @@ qqline(expr.meta$pkyrs)
 
 #Make a Boxplot between gender and pack-years smoking
 boxplot(pkyrs~gender, data=expr.meta)
+
+#Load the data
+BiocManager::install('gwascat')
+library(gwascat)
+data(ebicat37)
+ebicat37
+
+#Which chromosome has the most GWAS hits in the catalog?
+sort(table(ebicat37$CHR_ID),decreasing=TRUE)
+
+#What is the disease/trait with the most associations?
+sort(table(mcols(ebicat37)[,"DISEASE/TRAIT"]), decreasing=TRUE)[1]
