@@ -42,3 +42,22 @@ sum(width(gaps(x)))
 length(disjoin(x))
 
 
+#SETUP Granges
+library(GenomicRanges)
+x = GRanges("chr1", IRanges(c(101,201,401,501),c(150,250,450,550)), strand="+")
+y = GRanges("chr1", IRanges(c(101,221,301,401,541),c(150,250,350,470,550)), strand="+")
+
+#Find the total width which is covered by ranges in both x and y
+disjoined = disjoin(c(x,y))
+in.both = disjoined %over% x & disjoined %over% y
+sum(width(disjoined[ in.both ]))
+
+#What is the total width which is in x or y but not in both?
+disjoined = disjoin(c(x,y))
+not.in.both = !(disjoined %over% x & disjoined %over% y)
+sum(width(disjoined[ not.in.both ]))
+
+#What is the number of ranges in x which overlap z according to the %over% command?
+ z = GRanges("chr1", range(ranges(x)), strand="-")
+sum(x %over% z)
+
