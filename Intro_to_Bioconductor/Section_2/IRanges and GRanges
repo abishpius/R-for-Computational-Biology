@@ -4,3 +4,19 @@
 BiocManager::install("genomicsclass/ERBS")
 library(ERBS)
 data(HepG2)
+
+#What is the median of the signalValue column for the HepG2 data?
+library(ERBS)
+data(HepG2)
+median( mcols(HepG2)$signalValue )
+
+#In what chromosome is the region with the highest signalValue
+ i=which.max(  mcols(HepG2)$signalValue  )
+seqnames(HepG2[i])
+
+#How many regions are from chromosome 16?
+chr = seqnames(HepG2)
+table(chr)[16]
+
+#What is the median width?
+median( width(HepG2) )
