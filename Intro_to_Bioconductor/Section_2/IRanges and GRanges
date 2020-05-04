@@ -20,3 +20,25 @@ table(chr)[16]
 
 #What is the median width?
 median( width(HepG2) )
+
+#Load the IRanges package. Define an integer range starting at 101 and ending at 200. If we use the operation *2, this will zoom in, giving us a range with half the width. What is the starting point of the resulting range?
+library(IRanges)
+
+IRanges(101,200) * 2
+
+#Define an integer range starting at 101 and ending at 200. If we use the operation narrow(x, start=20), what is the new starting point of the range?
+narrow(IRanges(101,200), start=20)
+
+#Define an integer range starting at 101 and ending at 200. If we use the operation +25, what is the width of the resulting range?narrow(IRanges(101,200), start=20)
+IRanges(101,200)+25
+
+#Define an IRanges with starts at 1,11,21 and ends at 3,15,27. width() gives the widths for each range. What is the sum of the widths of all the ranges?
+sum(width(IRanges(start=c(1,11,21),end=c(3,15,27))))
+
+#Define an IRanges object, x, with the following set of ranges: Starts at 101,106,201,211,221,301,306,311,351,361,401,411,501 Ends at 150,160,210,270,225,310,310,330,390,380,415,470,510   What is the total width from 101 to 510 which is not covered by ranges in x?
+sum(width(gaps(x)))
+
+#How many disjoint ranges are contained within the ranges in x?
+length(disjoin(x))
+
+
