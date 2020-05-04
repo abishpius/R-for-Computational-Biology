@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 #Load Data These are the reported ESRRA binding sites obtained for a ENCODE ChIP-seq experiment on two cell lines: HepG2 and GM12878.
 BiocManager::install("genomicsclass/ERBS")
 library(ERBS)
