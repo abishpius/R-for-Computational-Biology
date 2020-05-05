@@ -1,0 +1,86 @@
+#!/usr/bin/env Rscript
+
+#load the data
+library(ERBS)
+data(HepG2)
+data(GM12878)
+
+#Where does the 17th HepG2 region start?
+start(HepG2)[17]
+
+#Use distanceToNearest() to find the closest region in GM12878 to the 17th region in HepG2. What is the start site of this region?
+d = distanceToNearest(HepG2[17],GM12878)
+i = subjectHits(d)
+start(GM12878[i])
+
+#What is the distance between the 17th region of HepG2 and its closest region in GM12878?
+d = distanceToNearest(HepG2[17],GM12878)
+mcols(d)$distance
+
+#What proportion of these distances are smaller than 2000 base pairs?
+d = distanceToNearest(HepG2,GM12878)
+mean( mcols(d)$distance < 2000)
+
+
+#Load New Data
+library(Homo.sapiens)
+ghs = genes(Homo.sapiens)
+
+#What genome build was used here?
+ genome(ghs)
+ 
+#How many genes are represented in ghs?
+length(ghs)
+
+#What is the chromosome with the most genes?
+which.max( table( seqnames( ghs ) ))
+
+#Make a histogram of the widths of genes
+w = width( ghs )
+hist( w )
+median(w)
+
+#Load the data
+library(ERBS)
+data(HepG2)
+data(GM12878)
+res = findOverlaps(HepG2,GM12878)
+erbs = HepG2[queryHits(res)]
+erbs = granges(erbs)
+erbs2= intersect(HepG2,GM12878)
+
+#Comparing consensus methods
+## first order them
+erbs3 = erbs[order(erbs),]
+##confirm same chr
+all( seqnames(erbs2)==seqnames(erbs3) )
+mean( start(erbs2)==start(erbs3) & end(erbs2)==end(erbs3) )
+##the intersection should be smaller
+all( width(erbs2) <= width(erbs3) )
+
+What is the TSS (Transcription Start Site) of the gene with ID: 100113402?
+library(Homo.sapiens)
+ghs = genes(Homo.sapiens)
+tssgr= resize(ghs,1)
+start(tssgr["100113402"])
+
+What is the GENEID of the gene with TSS closest to the 4th region of erbs?
+library(ERBS)
+data(HepG2)
+data(GM12878)
+res = findOverlaps(HepG2,GM12878)
+erbs = HepG2[queryHits(res)]
+erbs = granges(erbs)
+ghs = genes(Homo.sapiens)
+tssgr= resize(ghs,1)
+i = nearest(erbs[4],tssgr)
+mcols(tssgr)$GENEID[i]
+
+#Use the select() function to determine the SYMBOL of this gene.
+library(Homo.sapiens)
+ghs = genes(Homo.sapiens)
+tssgr= resize(ghs,1)
+i = nearest(erbs[4],tssgr)
+gene = as.character(mcols(tssgr)$GENEID[i])
+
+select(Homo.sapiens,key=gene,column="SYMBOL",keytype="GENEID")
