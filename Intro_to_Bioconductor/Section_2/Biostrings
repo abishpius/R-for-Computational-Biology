@@ -1,0 +1,32 @@
+#!/usr/bin/env Rscript
+
+#load the data
+Library(Biostrings
+eco <- DNAString("GGTTTCACCGCCGGTAATGAAAAAGGCGAACTGGTGGTGCTTGGACGCAACGGTTCCGACTACTCTGCTGCGGTGCTGGCTGCCTGTTTACGCGCCGATTGTTGCGAGATTTGGACGGACGTTGACGGGGTCTATACCTGCGACCCGCGTCAGGTGCCCGATGCGAGGTTGTTGAAGTCGA")
+eco
+
+#How many bases are in eco?
+length(eco)
+
+#How many potential start codons are in the eco sequence?
+countPattern("ATG", eco)
+
+#What is the start location of the first ATG?
+start(matchPattern("ATG", eco))[1]
+
+#Translate this sequence into amino acids. How long is the resulting AAString?
+aa_full = translate(eco[17:181])
+length(aa_full)
+
+#What is the location of the stop codon in the AAString?
+start(matchPattern("*", aa_full))
+
+#How many amino acids are in the resulting AAString?
+aa = aa_full[1:52]
+length(aa)
+
+#How many positively charged amino acids are in the sequence?
+letterFrequency(aa, "HKR")
+
+#How many negatively charged amino acids are in the sequence?
+letterFrequency(aa, "DE")
