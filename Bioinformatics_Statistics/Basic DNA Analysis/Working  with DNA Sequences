@@ -1,0 +1,69 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+# Basic DNA Analysis
+
+
+The FASTA format is very simple – it is a plain text file where the first line begins with ">" (the
+description line) and contains whatever name or identifier belongs to the sequence.
+
+The following line(s) are the sequence itself, DNA or Protein, in standard IUPAC code.
+
+If the FASTA file contains more than one sequence, the next sequence is indicated by a new
+description line – this can be repeated for as many sequences as are desired.
+
+Let’s start by reading a FASTA file in to R using the seqinr library.
+
+Add your top comments line and then add this line as the first actual code line: library(seqinr).
+
+```{r}
+library(seqinr)
+```
+
+Now that we have told R we are going to use the seqinr library, we can write a small piece of code to load a FASTA file.
+
+
+```{r}
+cox1 <- read.fasta(file="cox1.fasta", seqtype = "AA")
+```
+
+We can split the four sequences into individual sequences as well.
+```{r}
+length(cox1)
+#cox1[1]
+```
+
+Before we go much further, let’s learn how to import a sequence directly from a database rather than from a local file.
+```{r}
+library(ape)
+```
+
+Note that there are many different packages that let us connect to databases – APE is just one of the easier ones.
+```{r}
+AB003468 <- ape::read.GenBank("AB003468", as.character = "TRUE")
+```
+
+Opening the variable by clicking the arrow to the left of its name will show you the attributes – it’s a cloning vector. 
+
+This file is currently in binary format we need to save it as FASTA and read it in before we can do any stats.
+
+```{r}
+ape::write.dna(AB003468, file ="AB003468.fasta", format = "fasta", append = FALSE, nbcol = 6, colsep = " ", colw = 10)
+```
+
+We can also retrieve sequences from Genbank using a package created by NCBI called
+rentrez
+
+```{r}
+library(rentrez)
+```
+
+The rentrez package lets us retrieve sequences in other ways than just by accession number and it doesn’t limit us to the binary format that APE does.
+
+For example, you can search for sequences using entrez_search:
+
+```{r}
+entrez_search(db="nucleotide", term="human superoxide dismutase")
+```
+
