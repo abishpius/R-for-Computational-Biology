@@ -1,0 +1,84 @@
+#!/usr/bin/env Rscript
+
+#Load the data
+BiocManager::install("genomicsclass/GSE5859Subset")
+library(GSE5859Subset)
+data(GSE5859Subset)
+dim(geneExpression)
+dim(sampleInfo)
+dim(geneAnnotation)
+
+# create the objects we will use in the phenoData slot by applying the AnnotatedDataFrame() function to the appropriate table. Call this object pd, make sure to give it rownames() that match the colnames() of geneExpression. What is the date of this experiment?
+
+pd <- AnnotatedDataFrame(sampleInfo)
+rownames(pd) <- pd$filename
+pd <- pd[, varLabels(pd) != "filename"] ## redundant
+pData(pd)["GSM136530.CEL.gz", "date"]
+
+#list the variable names for the phenotype data
+varLabels(pd)
+
+#What chromosome is this gene from?
+fd <- AnnotatedDataFrame(geneAnnotation)
+rownames(fd) <- fd$PROBEID
+fd <- fd[, varLabels(fd) != "PROBEID"] ## redundant
+pData(fd)["204810_s_at", "CHR"]
+
+#After creating and expression set, What is the difference in median expression of genes on the Y chromosome between maleY and femaleY?
+eset <- ExpressionSet(assayData = geneExpression,
+                      phenoData = pd,
+                      featureData = fd)
+
+ind1 <- which(featureData(eset)$CHR == "chrY")
+ind2 <- pData(eset)$group == 1
+femaleY <- colMeans(exprs(eset)[ind1, ind2]) 
+maleY <- colMeans(exprs(eset)[ind1, !ind2]) 
+boxplot(maleY, femaleY)
+median(maleY) - median(femaleY)
+
+# subset on just the first 10 feature and first 5 samples of this dataset
+eset[1:10, 1:5]
+
+#Load the Data
+library(hgu95acdf)
+https://github.com/genomicsclass/rawdata
+
+#Based on the information in this table, at what level was gene 36311_at spiked in for file 1521a99hpp_av06.CEL.gz?
+wd <- getwd()
+datadir <- file.path(wd, "rawdata-master")
+basedir <- file.path(datadir, "celfiles")
+setwd(basedir)
+tab <- read.delim("sampleinfo.txt", check.names = FALSE, as.is = TRUE)
+rownames(tab) <- tab$filenames
+tab["1521a99hpp_av06.CEL.gz", "36311_at"]
+
+#Extract the feature IDs using the probeNames() function. How many features are associated with gene 36311_at?
+fns <- list.celfiles()
+fns
+all(fns %in% tab[,1])
+ab <- ReadAffy(phenoData=tab)
+sum(probeNames(ab) == "36311_at")
+
+## identify columns w/ samples of interest
+samps <- c("1532a99hpp_av04.CEL.gz", "1532b99hpp_av04.CEL.gz")
+ind <- which(colnames(ab) %in% samps)
+ab_sub <- ab[, ind]
+
+## extract probe intensities for probe set of interest
+pid <- "36085_at"
+mat <- pm(ab_sub)[probeNames(ab_sub) == pid, ]
+
+## determine expected concentrations
+conc <- pData(ab)[ind, pid]
+
+## compute probe-level log2 fold changes
+lfc <- log2(mat[, 2] / mat[, 1])
+
+## make the plots
+boxplot(lfc, ylim = c(-0.5, 1.5))
+abline(h = log2(conc[2] / conc[1]), lty = 2, col = 'blue') #intended log fold
+abline(h = 0)
+
+
+
+
