@@ -1,0 +1,122 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+First we’ll need to convert our sequence into a simple string for analysis.  Let’s use the AB003468 sequence.
+
+```{r}
+BiocManager::install('seqinr')
+library(seqinr)
+AB003468 <- read.fasta(file = "AB003468.fasta", seqtype = "DNA")
+```
+
+
+```{r}
+CloningVector <- AB003468[[1]]
+```
+This tells seqinr to strip the variable AB003468’s first (and only) sequence down to the basic characters (no header).
+
+Now let’s do a simple nucleotide count and execute it:
+```{r}
+ count <- count(CloningVector,1) 
+```
+This retrieves the total count of each nucleotide (A, C, G, and T) and stores it in the variable count.
+
+```{r}
+count
+```
+The count command requires the object in this case, CloningVector as well as a numerical value - in this case we gave it 1, which resulted in sequin showing us all possible bases. 
+
+We can just as easily see all dinucleotide combinations by using a 2, or trinucleotide combinations by using a 3: count(CloningVector,2) or count(CloningVector,3)
+```{r}
+count(CloningVector,2)
+```
+This is called a "word count" analysis, and it can be done for any size "word". Another important metric that can easily be obtained is the GC content of a sequence.
+
+The GC content tells us what the ratio of G (guanines) and C (cystosines) residues compared to A (adenine) and T (thymidine) residues in a sequence is
+  This is important because coding regions tend to be higher in GC.
+  GC content also affects the "melting" temperature of DNA.
+
+```{r}
+GC <- GC(CloningVector)
+```
+GC now shows up in the Global Environment pane for CloningVector, the GC content is 0.51, which means that the GC to AT ratio is pretty even in this sequence.
+
+
+The GC value is a global value, though – and if GC content varies over the course of a sequence (e.g.if you were analyzing an entire genome), then it would be far more interesting to see how GC content changes over the length of a sequence.
+
+To do that we’ll have to do something a little more sophisticated – calculating the GC content by"windows", or short regions, of the sequence.
+
+Then we can plot the change in GC content over these windows and see if there are any interesting changes.
+
+Let’s start by calculating the GC content over a window size of 200.
+
+
+We’ll use a variable called GCwindow to break the sequence into chunks of 200.  Add this line to your code and execute it:
+```{r}
+GCwindow <- seq(1, length(CloningVector)-200, by = 200)
+```
+This uses the seq command to find the "break points" of CloningVector into chunks of 200
+
+If you type GCwindow into the console and hit return you’ll see the values 1, 201, 401, etc..
+
+These are the window start points for our analysis – 1 to 200, 201 to 400, etc…
+Important Note:
+
+Make sure you understand why we took the length of CloningVector and subtracted 200 from it. If it doesn’t make sense, try running this code without the -200 and see what values you get instead and check if they make sense. 
+
+Now that we have our window starting points, we can use those in a FOR loop to "chunk" the sequence up.  First we need to know how many chunks we’re dealing with by adding this line:
+```{r}
+n <- length(GCwindow)
+```
+
+Now we create a new, blank vector with the same number of blank spaces that we can fill with our GC values:
+
+```{r}
+Chunks <- numeric(n)
+```
+
+The numeric makes sure that we just get the raw number for n.
+
+Finally we can add the FOR loop. 
+
+```{r}
+# For loop to compute GC per chunk
+for(i in 1:n){
+  chunk <- CloningVector[GCwindow[i]:(GCwindow[i]+199)]
+  chunkGC <- GC(chunk)
+  print(chunkGC)
+  Chunks[i] <- chunkGC
+}
+```
+
+By plotting the output we can see graphically how the GC content changes over the space of the sequence.
+```{r}
+plot(GCwindow,Chunks,type="b",xlab="Nucleotide start position",ylab="GC content")
+```
+This result tells you that while the GC content is 0.5 overall, it changes dramatically over the length of the sequence if we use a window of 200bp.
+
+# GC Custom-Window Plot Function
+
+```{r}
+slidingwindowGCplot <- function(windowsize,inputseq){
+  GCwindow <- seq(1, length(inputseq)-windowsize, by = windowsize)
+  # Find the length of the GCwindow
+  n <- length(GCwindow)
+  # Make a vector the same length buth "blank" 
+  Chunks <- numeric(n)
+  for (i in 1:n) {
+    chunk <- inputseq[GCwindow[i]:(GCwindow[i]+windowsize-1)]
+    chunkGC <- GC(chunk)   
+  print(chunkGC)   
+  Chunks[i] <- chunkGC  
+  }
+ plot(GCwindow,Chunks,type="b",xlab="Nucleotide start position",ylab="GC content",main=paste("GC Plot with windowsize", windowsize))
+}
+```
+
+```{r}
+slidingwindowGCplot(175,CloningVector)
+```
+
