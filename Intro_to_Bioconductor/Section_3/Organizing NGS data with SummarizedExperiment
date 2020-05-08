@@ -1,0 +1,57 @@
+#!/bin/usr/env Rscript
+
+#Load the data
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("airway")
+library(airway)
+data(airway)
+airway    # SummarizedExperiment object
+
+#What is the PubMed ID (PMID) for the original paper supplying these data?
+metadata(airway)
+
+#How many features are in the dataset?
+nrow(airway)
+
+#How many samples are in the dataset?
+ncol(airway)
+
+#Which cell line is associated with sample SRR1039509?
+colData(airway)["SRR1039509", "cell"]    # inspect column names to figure out which refers to cell line: "cell"
+
+#What is the name of the metadata column specifying whether the sample was treated with dexamethasone (a steroid)?
+names(colData(airway))    # look for name related to dexamethasone: "dex"
+
+Which sample (column name) has the shortest average read length?
+rownames(colData(airway))[which.min(colData(airway)$avgLength)]    # look for column name related to read length: avgLength
+
+#Each feature (row) in the dataset corresponds to a single gene. How many genes are in the dataset?
+length(rowRanges(airway))
+
+#The row metadata for the airway object include GRanges specifying the exon boundaries for each gene. How many exons are in the 100th gene?
+length(rowRanges(airway)[[100]])
+
+#On which chromosome is the 100th gene?
+seqnames(rowRanges(airway)[[100]])
+
+#How many bases long is the 100th gene (including introns)?
+width(range(rowRanges(airway)[[100]]))
+
+#What is the transcription start site (TSS) of the 100th gene?
+resize(range(rowRanges(airway)[[100]]), 1)
+
+#What is the mean expression level of this gene across all samples?
+mean(assay(airway)["ENSG00000103196", ])
+
+#What is the mean expression level of this gene in samples treated with dexamethasone?
+trt <- mean(assay(airway)["ENSG00000103196", which(colData(airway)$dex == "trt")])
+trt
+
+#What is the mean expression level of this gene in untreated control samples?
+untrt <- mean(assay(airway)["ENSG00000103196", which(colData(airway)$dex == "untrt")])
+untrt
+
+#What is the log (base 2) ratio of mean expression of this gene between treated and untreated samples?
+log2(trt / untrt)
+
