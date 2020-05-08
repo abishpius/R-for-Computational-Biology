@@ -1,0 +1,69 @@
+#!/bin/usr/env Rscript
+
+#Load the data
+library(pasillaBamSubset)
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+txdb <- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+
+#Create the genes object and subset to chromosome 4:
+g <- genes(txdb)
+g <- g[seqnames(g) == "chr4"]
+
+#Create the GRangesList of exons by gene, and subset to the same genes as in g:
+grl <- exonsBy(txdb, by="gene")
+grl <- grl[names(g)]
+
+#Test for the same names:
+all.equal(names(g), names(grl))
+
+#Determine the path to the BAM file of single-end RNA-seq data that we have been using:
+library(Rsamtools)
+bf <- BamFile(untreated1_chr4())
+
+#Load the GenomicAlignments package:
+library(GenomicAlignments)
+
+#Now call the summarizeOverlaps() function on the BamFile bf once using the GRanges object g, and once using the GRangesList object grl with exons per gene. Since the experiment was not strand-specific, the strand information in the BAM file is not biologically meaningful. Use the ignore.strand=TRUE setting to when finding overlaps. You do not need to specify any additional arguments.
+
+#If desired, you can plot the reads overlapping g and grl in a scatterplot, on the log scale as in the previous video. Add an abline with a=0, and b=1.
+
+#What is the mean ratio of the counts in grl and g, after removing genes where g had zero counts?
+g.so <- summarizeOverlaps(g, bf, ignore.strand = TRUE)
+grl.so <- summarizeOverlaps(grl, bf, ignore.strand = TRUE)
+
+# this generates a warning about applying log to 0s
+plot(assay(g.so), assay(grl.so), log = "xy")
+abline(0, 1)
+
+# adding a pseudocount prevents warnings for 0s
+plot(assay(g.so) + 1, assay(grl.so) + 1, log = "xy")
+abline(0, 1)
+
+ratio <- assay(grl.so) / assay(g.so)
+mean(ratio[assay(g.so) > 0])
+
+#Let's consider the single column count table obtained using the grl GRangesList above. Divide the counts in this table by the sum of counts to obtain the proportion of reads aligning to each read. Now multiply these proportions by 1 million. This operation scales each column of the count table such that we get the number of reads expected if the sample were sequenced to have 1 million reads mapping to genes on chromosome 4.
+
+#In this dataset, we are only looking at the subset of reads mapping to chromosome 4. Suppose, however, that this were the complete set of mapped reads for this sample. Then, the computed quantities would be the number of reads mapping to each gene for every million mapping reads. This quantity is commonly referred to as reads per million (RPM). The term fragments per million, FPM, is also often used. ("Fragments" are used more generally, because in a paired-end experiment two reads represent one observed DNA or RNA fragment and we are almost always more interested in the fragment counts rather than the read counts.)
+
+#Supposing that all reads mapped to chromosome 4, what is the FPM for the first gene, FBgn0002521?
+
+count <- assay(grl.so)
+  
+# here, we can just use sum() because there is only one column
+# otherwise we would use: sweep(count, 2, colSums(count), "/")
+fpm <- (count / sum(count)) * 1e6
+fpm[1]
+
+#We said that the count depends on the number of mapped reads, and also on the size of the gene. If you think about reads randomly arising from fragmented RNA molecules, the number of reads (or fragments) should be proportional to the number of basepairs in the exons (roughly), if all other variables are held equal (gene expression and sequencing depth).
+
+#Using the reduce() and width() functions, compute the total width of the exonic regions of each gene in grl. The reduce() call is necessary to prevent overcounting positions in overlapping exons. Check the summary() of these values. The mean should be 4383.
+
+#Divide the FPM values by the number of basepairs in the exons of each gene, and then finally multiply by 1000. This is called the FPKM, the number of fragments per kilobase of exonic basepairs, per million mapped reads (again we suppose that we've observed all the genes and reads, rather than just the ones on chromosome 4).
+
+#What is the FPKM for the first gene, FBgn0002521?
+ebp <- sum(width(reduce(grl)))
+count <- assay(grl.so)
+fpm <- (count / sum(count)) * 1e6
+fpkm <- (fpm / ebp) * 1e3
+fpkm[1]
