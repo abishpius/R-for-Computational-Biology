@@ -1,0 +1,34 @@
+#!/bin/usr/env Rscript
+
+#Load the data
+BiocManager::install("Rsamtools")
+library(pasillaBamSubset)
+library(Rsamtools)
+filename <- untreated1_chr4()
+
+#Use Rsamtools to count the number of reads which align to chromosome 4 between 440,000 and 470,000. How many reads align here?
+bf <- BamFile(filename)
+gr <- GRanges("chr4", IRanges(440000, 470000))
+countBam(bf, param = ScanBamParam(which = gr))
+
+#What is the average GC content of the reads which align to chromosome 4 between positions 440,000 and 470,000?
+bf <- BamFile(filename)
+gr <- GRanges("chr4", IRanges(440000, 470000))
+seqs <- scanBam(bf, param = ScanBamParam(what = "seq", which = gr))
+mean(letterFrequency(seqs[[1]]$seq, "GC", as.prob=TRUE))
+
+#Load the data
+BiocManager::install("GenomicAlignments")
+library(GenomicAlignments)
+ga <- readGAlignments(BamFile(filename))
+hist(start(ga), breaks=100)
+
+BiocManager::install("TxDb.Dmelanogaster.UCSC.dm3.ensGene")
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+g <- genes(TxDb.Dmelanogaster.UCSC.dm3.ensGene)    # GRanges corresponding to genes
+g2 <- g[g %over% GRanges("chr4", IRanges(200000, 300000))]
+
+#How many negative strand reads overlap the 'FBgn0039890' gene?
+countOverlaps(g2["FBgn0039890"], ga)
+
+
