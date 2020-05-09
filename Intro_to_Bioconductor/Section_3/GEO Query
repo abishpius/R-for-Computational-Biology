@@ -1,0 +1,14 @@
+#!/bin/usr/env Rscript
+
+#Load the data
+BiocManager::install("hgu133plus2.db")
+library(hgu133plus2.db)
+
+#How many probe sets are mapped to the gene with the symbol EGFR?
+nrow(select(hgu133plus2.db, keys="EGFR", columns="PROBEID", keytype="SYMBOL"))
+
+#Use GO.db to determine the tag for the term 'glial cell proliferation'. 
+key = select(GO.db, keys="glial cell proliferation", keytype="TERM", columns="GOID")$GOID
+
+#how many probe sets are annotated to this biological process
+nrow(select(hgu133plus2.db, keys=key, columns=c("PROBEID", "SYMBOL"), keytype="GO"))
