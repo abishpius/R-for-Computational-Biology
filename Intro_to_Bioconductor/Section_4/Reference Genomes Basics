@@ -1,0 +1,31 @@
+#!/bin/usr/env Rscript
+
+#Load the data
+BiocManager::install(c("BSgenome",
+                       "BSgenome.Hsapiens.UCSC.hg19.masked",
+                       "TxDb.Hsapiens.UCSC.hg19",
+                       "org.Hs.eg.db",
+                       "ensembldb",
+                       "EnsDb.Hsapiens.v75",
+                       "AnnotationHub",
+                       "rtracklayer",
+                       "TxDb.Hsapiens.UCSC.hg38.knownGene",
+                       "KEGGREST",
+                       "rols",
+                       "GSEABase"))
+                       
+
+#How many Bioconductor packages provide reference genomic sequence for zebrafish (Danio rerio)?
+library(BSgenome)
+grep("Drerio", available.genomes(), value=TRUE)
+
+#Run the following
+library(BSgenome.Hsapiens.UCSC.hg19.masked)
+c17m = BSgenome.Hsapiens.UCSC.hg19.masked$chr17
+
+#What is the class of c17m?
+class(c17m)
+
+#In build hg19, what percentage of the length of chromosome 22 is occupied by "assembly gaps"?
+c22m = BSgenome.Hsapiens.UCSC.hg19.masked$chr22
+round(100*sum(width(masks(c22m)$AGAPS))/length(c22m),0)
