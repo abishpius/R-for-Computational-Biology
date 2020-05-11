@@ -29,3 +29,8 @@ class(c17m)
 #In build hg19, what percentage of the length of chromosome 22 is occupied by "assembly gaps"?
 c22m = BSgenome.Hsapiens.UCSC.hg19.masked$chr22
 round(100*sum(width(masks(c22m)$AGAPS))/length(c22m),0)
+
+#What is the number of transcripts comprising the model for ESR1?
+library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+txdb = TxDb.Hsapiens.UCSC.hg19.knownGene
+length(transcripts(txdb, filter=list(gene_id="2099")))
