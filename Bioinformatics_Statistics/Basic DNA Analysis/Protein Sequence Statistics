@@ -1,0 +1,59 @@
+#!/bin/usr/env Rscript
+
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Protein Sequence Statistics
+
+Basic protein sequence statistics on cox1 protein
+
+
+```{r}
+library(Peptides)
+library(seqinr)
+cox1 <- read.fasta(file="cox1.fasta", seqtype = "AA")
+aaComp(cox1[1])
+```
+The aaComp() command uses the Peptides library to determine the amino acid composition of the sequence.  Since you passed the command as aaComp(cox1[1]) (with a [1]) after the sequence name), R knew to run that command only on the first sequence in cox1.
+
+cox1 has 4 sequences in it, however you could easily just type the following to get the amino acid composition for all four:
+aaComp(cox1)
+
+```{r}
+aaComp(cox1)
+```
+
+In a similar fashion we can invoke other commands from the Peptides package, such as:
+aIndex – this returns the aliphatic index of the protein sequence (an indicator of thermostability of globular proteins).
+```{r}
+aIndex(cox1)
+```
+
+The Peptides package contains other useful commands – for instance, charge.
+The charge command predicts the net charge of the protein.
+
+In order to calculate this even close to accurately, charge requires additional input parameters: charge(seq, pH = 7, pKscale = "Lehninger")
+  Recall from the Proteins course that different amino acids will have different charges based on their R group.
+  The pH of the medium that the amino acids are in will affect this charge; hence the need to include the pH value in the charge command as well as a pKscale.
+
+```{r}
+charge(cox1)
+```
+
+For example, instead of submitting the entire cox1 to charge, you could specify the sequence in the command like this:
+charge(seq="FLPVLAG", pH=7, pKscale="EMBOSS")
+
+
+Another common measure of amino acid sequences which can be performed with the Peptides library is hydrophobicity.
+  Recall that in the Proteins class we used the EMBOSS package to calculate hydrophobicity plots.
+  Using the Peptides library you can create similar plots, but with much more sophistication, in R.
+  The basic command is: hydrophobicity(seq)
+
+```{r}
+hydrophobicity(cox1)
+```
+
+
+
