@@ -1,0 +1,103 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Pairwise Sequence Alignment
+
+
+One of the most basic functions in sequence analysis is a sequence alignment.
+  A sequence alignment takes two or more sequences that are suspected of being similar and "lines them up", one on top of the other, matching similar residues (bases) and inserting gaps (dashes) where necessary.
+  Sequence alignments can also include "mismatches" – residues or bases that do not match but are orthologous – meaning that they are known to be in the same position in both sequences despite not being identical.
+  Sequence alignments are generally the first step in any comparative analysis.
+  
+The columns represent orthologous residues same position in the protein, thus ostensibly the same function.
+The rows represent the different species – with the exception of the last row which indicates the homology between the species.
+This can also be represented as the "consensus" sequence – meaning the sequence of agreement, or the sequence in common between all represented species.
+Alignments do not have to be between sequences from different species – some genes within the same species will also share similarity.
+
+
+The simplest sequence alignment involves only two sequences – this is called a "pairwise alignment"
+  Pairwise alignments can be used to analyze two sequences directly.
+  Pairwise alignments can also be an intermediate step to creating more complex "multiple sequence alignments", or MSA’s.
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install()
+
+```
+
+
+```{r}
+library(Biostrings)
+library(seqinr)
+```
+
+```{r}
+prokaryotes <- read.fasta(file = "prok.fasta", seqtype = "DNA")
+```
+
+```{r}
+seq1 <- as.character(prokaryotes[[1]])
+seq1 <- paste(seq1,collapse="")
+seq2 <- as.character(prokaryotes[[2]])
+seq2 <- paste(seq2, collapse=)
+```
+
+The first command in each pair just parses the first sequence from prokaryotes into it's own variable.
+The second command converts that into a simple text (character) string.
+This is necessary for Biostrings to align the sequences.
+
+align seq1 and seq2 using the defaults
+```{r}
+pairwiseAlignment(pattern=seq2, subject=seq1)
+```
+
+```{r}
+pairalign <- pairwiseAlignment(pattern = seq2, subject = seq1)
+summary(pairalign)
+```
+
+Now that we have an alignment, we might want to export it back out of R as a FASTA file, preserving the inserted dashes (indels)
+  We can do that with another Biostrings command called writeXStringSet
+  First we need to convert the alignment to strings, using a different Biostrings command called BStringSet – add this line to your code:
+```{r}
+pairalignString = BStringSet( c( toString( subject(pairalign) ), toString(pattern(pairalign))))
+```
+```{r}
+#Convert to FASTA and Save
+writeXStringSet(pairalignString, "aligned.txt", format="FASTA")
+```
+  
+seqinr includes a simple routine for creating dotplots from two sequences called dotPlot.  
+```{r}
+coxgenes <- read.fasta(file = "cox1multi.fasta", seqtype="AA")
+
+cox1 <- as.character(coxgenes[[1]])
+
+cox2 <- as.character(coxgenes[[2]])
+```
+  
+```{r}
+dotPlot(cox1, cox2, main = "Human vs Mouse Cox1 Dotplot")
+```
+  
+```{r}
+dotPlot(cox1, cox2, wsize = 3, wstep = 3, nmatch = 3, main = "Human vs Mouse Cox1 Dotplot\nwsize = 3, wstep = 3, nmatch = 3")
+```
+  
+```{r}
+dotPlot(cox1[1:100], cox2[1:100], wsize = 3, wstep = 3, nmatch = 3, main = "Human vs Mouse Cox1 first 100 AA Dotplot\nwsize = 3, wstep = 3, nmatch = 3")
+```
+  
+From your DNA and Proteins classes you should remember the difference between local and global alignments:
+üIn a local alignment, you are matching your query with a substring (fragment) of your subject sequence. 
+  In a global alignment you perform an end to end alignment between the two.
+üYou may end up with a lot of gaps in global alignment if the sizes of query and subject are dissimilar).
+  Local alignments may also have gaps.
+There is in fact a third option – the overlap alignment.  Overlap alignments are used when you are trying to assemble overlapping sequences, e.g. from multiple sequencing runs in a genome assembly.
+Overlap alignments focus on making the best alignments between the end of one sequence and the end of another.
+You can use type = "<type>" to tell pairwiseAlignment which type of alignment you are using, e.g.type = "local".
+There are other options for pairwise alignment that let you control the substitution matrix to use (submat = "<type>") as well as the gap opening and extension penalties (gapOpening = X, gapExtension = Y).
+For now you can experiment with these on your own – we will use various settings later in thecourse.   
+
