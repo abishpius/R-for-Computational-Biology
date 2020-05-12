@@ -1,0 +1,28 @@
+#!/bin/usr/env Rscript
+
+#Hub exploration via query
+library(AnnotationHub)
+ah = AnnotationHub()
+mah = mcols(ah)
+names(mah)
+sort(table(mah$species), decreasing=TRUE)[1:10]
+
+names(query(query(ah, "HepG2"), "CTCF"))
+
+#Load Data
+library(rtracklayer)
+data(targets)
+
+#What is the class of targets?
+class(targets)
+
+#Create a GRanges instance from the targets data frame
+library(GenomicRanges)
+mtar <- with(targets,
+GRanges(chrom, IRanges(start,end), strand=strand,
+targets=target, mirname=name))
+
+#What is the name of the microRNA represented by the feature in the first row?
+cat(export(mtar[1:5], format="bed"), sep="\n")
+cat("\n")
+cat(export(mtar[1:5], format="gff3"), sep="\n")
