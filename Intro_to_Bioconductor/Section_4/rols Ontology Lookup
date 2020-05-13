@@ -1,0 +1,17 @@
+#!/bin/usr/env Rscript
+
+#Load Packages
+library(rols)
+diab = OlsSearch("diabetes")
+
+#How many entries exist?
+olsRows(allRows(diab))
+
+#How many entries does clo contribute on the term 'diabetes'?
+fulld = olsSearch(allRows(diab))
+adf = as(fulld, "data.frame") #convert to dataframe
+sort(table(adf$ontology_name), decreasing=TRUE)[1:10]
+
+#How many entries for 'oral glucose' are found in the table?
+library(DT)
+datatable(adf)
