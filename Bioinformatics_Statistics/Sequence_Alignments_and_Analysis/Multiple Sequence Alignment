@@ -1,0 +1,68 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Multiple Sequence Alignments
+
+
+A Multiple Sequence Alignment, or MSA, is exactly what it sounds like – an alignment of many (more than two) sequences.
+  While we could use pairwiseAlignment from Biostrings to align multiple sequences individually to our subject, this is not efficient nor as accurate as using a "true" MSA algorithm such as CLUSTALW.
+```{r}
+BiocManager::install("msa")
+```
+```{r}
+library(msa)
+```
+
+
+```{r}
+coxAA <- readAAStringSet("cox1multi.fasta")
+
+prokDNA <- readDNAStringSet("prok.fasta")
+```
+
+This aligns the cox1 protein sequences using CLUSTALW and the default alignment parameters
+```{r}
+coxAligned <- msa(coxAA)
+```
+
+
+```{r}
+prokAligned <- msa(prokDNA)
+```
+
+```{r}
+print(prokAligned, show="complete")
+```
+Naturally there are many options available for creating multiple sequence alignments.
+For example, we can choose which algorithm to align the sequences with:
+msa(prokDNA, "ClustalW")
+msa(prokDNA, "ClustalOmega")
+msa(prokDNA, "Muscle")
+
+```{r}
+msa(coxAA,
+cluster="upgma")
+```
+
+save the prokaryote sequence alignment as a stringset
+```{r}
+prokAlignStr = as(prokAligned, "DNAStringSet")
+```
+
+Need as DNAStringSet to write out FASTA file
+```{r}
+writeXStringSet(prokAlignStr, file="prokAligned.fasta")
+```
+
+Export AA alignment
+```{r}
+coxAlignStr = as(coxAligned, "AAStringSet")
+writeXStringSet(coxAlignStr, file="coxAligned.fasta")
+```
+
+```{r}
+write.phylip(coxAligned, "coxAligned.phylip")
+```
+
