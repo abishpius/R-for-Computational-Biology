@@ -1,0 +1,17 @@
+#!/bin/usr/env Rscript
+
+#Load the data
+library(KEGGREST)
+t<-keggGet("hsa:3845")
+
+#What is the name of the gene associated with this KEGG ID?
+t[[1]]$NAME[1]
+
+#How many pathways are listed for this protein?
+length(t[[1]]$PATHWAY)
+
+#What is the name of the pathway displayed?
+library(png)
+oo = keggGet("hsa00790", "image")
+writePNG(oo, "im.png")
+
