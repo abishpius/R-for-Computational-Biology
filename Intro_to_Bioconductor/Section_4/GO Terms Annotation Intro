@@ -1,0 +1,31 @@
+#!/bin/usr/env Rscript
+
+#load packages
+library(org.Hs.eg.db)
+library(GO.db)
+
+#How many genes are present on 17q21.1?
+nrow(select(org.Hs.eg.db, keys="17q21.1", keytype="MAP", columns="SYMBOL"))
+
+#Select GO tags occurring among the five most common annotations for genes on 17q21.1
+m17 = select(org.Hs.eg.db, keys="17q21.1", keytype="MAP", columns=c("SYMBOL", "GO"))
+sort(table(m17$GO), decreasing=TRUE)[1:5]
+
+#How many of the GO annotations for ORMDL3 have TAS (traceable author statement) as their evidence code?
+m17 = select(org.Hs.eg.db, keys="17q21.1", keytype="MAP", columns=c("SYMBOL", "GO"))
+nrow(m17[m17$SYMBOL=="ORMDL3" & m17$EVIDENCE == "TAS",])
+
+#ER binding sites in liver cells
+library(Homo.sapiens)
+g = genes(Homo.sapiens)
+library(ERBS)
+data(HepG2)
+kp = g[resize(g,1) %over% HepG2]
+
+#How many entries mention apoptosis?
+nn = names(kp)
+m = select(Homo.sapiens, keys=nn, keytype="ENTREZID",
+           columns=c("SYMBOL", "GENENAME", "TERM", "GO"))
+library(DT)
+datatable(m)
+
