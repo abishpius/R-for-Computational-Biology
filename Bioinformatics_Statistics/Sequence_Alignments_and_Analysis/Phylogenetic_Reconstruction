@@ -1,0 +1,102 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Phylogenetic Reconstruction
+
+Recall from your DNA and Proteins courses that the phylogeny of a group of sequences is simply a representation of the relatedness of the sequences – in other words, how similar they are to one another.
+
+This can be used to determine the actual relatedness in terms of evolutionary history (species ancestry or gene ancestry in the case of duplicated genes).
+
+The three simplest approaches for phylogenetic reconstruction in R are distance, maximum parsimony, and maximum likelihood.
+
+In distance parsimony a distance matrix is calculated for each possible pairwise combination of sequences – this is based on the number of differences they have, and is often "corrected" for multiple hits.
+
+The MSA package will allow us to convert our alignments to the various formats we will need.
+
+You should be aware that there are many ways of constructing a distance tree – the PHYLIP package, which we created an export of our alignment for previously, is the most commonly used.
+
+You can use either DNA or amino acid sequences for all of the approaches we are going to look at here, but you should bear in mind that most phylogenetic reconstruction will use genes chosen specifically because they are good for phylogeny because of their clock-like mutation rate and variable evolutionary constraints (e.g. 16S for prokaryotes or 18S for eukaryotes).
+
+For this example let's use our prokaryotic DNA alignment since the sequences show more variation than the amino acid sequences we have.
+
+Generate Distance Matrix
+```{r}
+library(seqinr)
+library(msa)
+prokDNA <- readDNAStringSet("prok.fasta")
+prokAligned <- msa(prokDNA)
+prokAligned2 <- msaConvert(prokAligned, type="seqinr::alignment")
+prokdist <- dist.alignment(prokAligned2, "identity")
+prokdist
+```
+
+Use the neighbor-joining method, which is an agglomerative approach that uses the pairwise distances to cluster the closest sequences first, then iteratively adds sequences to this pair.
+```{r}
+BiocManager::install("ape")
+library(ape)
+prokTree <- nj(prokdist)
+```
+```{r}
+plot(prokTree)
+```
+
+Distance trees are "simplistic" – they do not necessarily reflect actual evolutionary ancestry, since they focus purely on absolute similarity, but they do give a very quick and fast representation of the probable phylogeny.
+
+A more evolutionary-centric approach is maximum parsimony, which actually looks at shared characters between sequences and maximizes similarity while minimizing the number of steps required to construct a the phylogenetic history between the "cades", or species.
+
+Maximum parsimony is much more computationally intensive and can only be done for a limited (e.g. 30 or fewer) number of sequences, whereas distance parsimony is very fast and can look at unlimited sequences.
+
+```{r}
+library(phangorn)
+prokAligned3 <- msaConvert(prokAligned, type="phangorn::phyDat")
+```
+
+```{r}
+ParsTree <- pratchet(prokAligned3)
+```
+
+```{r}
+plot(ParsTree)
+```
+
+
+One variation on the distance approach is the maximum likelihood method.
+
+Maximum likelihood lets you use a distance matrix (as previously) but also includes the full sequence alignment and calculates the statistical likelihood of a tree given the full data.
+
+As such maximum likelihood is far more computationally intense, but it may also provide more accurate reconstructions than "conventional" distance approaches.
+
+The first step in maximum likelihood is to calculate the likelihood using the pml function.
+```{r}
+fit <- pml(prokTree, prokAligned3)
+```
+
+optim.pml requires us to provide the "model" of evolution that we think will best fit our data.
+   The model we will use for this exercise is the Jukes-Cantor model, which assumes that all bases are found in equal numbers, and that all mutations are equally likely (e.g. A to T or C or G, etc.).
+   Another "popular" model is K80, or the Kimura two-parameter model, which states that transition mutations (A <-> G)  will have a different rate from transversions (C<->T).
+
+```{r}
+fitJC <- optim.pml(fit, model = "JC", rearrangement = "stochastic")
+```
+
+```{r}
+plot(fitJC)
+```
+
+## Bootstrapping
+
+Bootstrapping is a method of subsampling data – effectively creating new data sets (usually 100) of the same size of the original by randomly sampling columns out of the existing data.
+
+Once the new datasets are constructed, they are all subjected to the analysis and the results merged.
+
+Bootstrapping can be used to see how strongly the dataset as a whole supports the conclusions – essentially a statistical measure.
+
+```{r}
+bootstrapped <- bootstrap.pml(fitJC, bs=100, optNni=TRUE, multicore = FALSE, control = pml.control(trace = 0))
+```
+```{r}
+plotBS(midpoint(fitJC$tree), bootstrapped, p = 50, type="p")
+```
+
