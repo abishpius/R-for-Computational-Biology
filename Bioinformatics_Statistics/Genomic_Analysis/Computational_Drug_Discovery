@@ -1,0 +1,142 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+ 
+# Compuatational Gene Discovery
+
+The speed with which we can sequence genomes has increased exponentially over the past decade.
+qWith thousands of genomes currently sequenced, and more being sequenced daily, the barrier to genomics is not acquiring sequence data – it is analyzing it.
+
+There are essentially two approaches to analyzing and annotating a genome:
+    Predictive 
+    Comparative
+
+The most common form of predictive analysis is gene prediction – determining whether or not a region may be a protein-coding gene.
+
+An open reading frame, or ORF, is simply a stretch of DNA bases which start with a START codon and do not contain a STOP codon.
+
+There are two things to keep in mind:
+  Length of the ORF - This is typically a configurable parameter. For e.g. an ORF of 10 bases is not likely to be a viable coding sequence, so a minimum length must be established.
+  Reading Frames - There are 6 potential reading frames for any given sequence and all 6must be checked for potential ORFs.
+
+So – how do we find an ORF?
+We use a sliding window approach to analyze the sequence as well as it's reverse-complement and look for START and STOP codons.
+
+The START codon is typically ATG.
+There are three canonical STOP codons in DNA:
+ TAG (known as "amber")
+ TAA (known as "ochre")
+ TGA (known as "opal")
+```{r}
+library(Biostrings)
+library(seqinr)
+```
+
+```{r}
+AB003468 <- readDNAStringSet("AB003468.fasta")
+
+AB003468 <- as.character(AB003468)
+```
+
+```{r}
+matchPattern("ATG", AB003468)
+```
+```{r}
+start_codon <- "ATG"
+
+stop_codons <- c("TGA","TAA","TAG")
+```
+
+```{r}
+start_pos <- c()
+
+revstart_pos <- c()
+
+stop_pos <- c()
+
+revstop_pos <- c()
+
+sequence <- AB003468
+```
+
+```{r}
+matches <- matchPattern(start_codon,sequence)
+#This finds all instances of start_codon in sequence and puts the results into matches
+start_pos <- c(start_pos, start(matches))
+```
+
+```{r}
+revmatches <- matchPattern(reverseComplement(DNAString(start_codon)), sequence)
+revstart_pos <- c(revstart_pos, start(revmatches))
+```
+
+```{r}
+#Find Starts
+start_pos <- sort(start_pos)
+
+revstart_pos <- sort(revstart_pos, decreasing = TRUE)
+```
+
+```{r}
+#Find Stops
+for (codon in stop_codons) {
+  matches <- matchPattern(codon, sequence)
+
+stop_pos <- c(stop_pos, start(matches))
+
+revmatches <- matchPattern(reverseComplement(DNAString(codon)),sequence)
+
+revstop_pos <- c(revstop_pos, start(revmatches))
+
+}
+```
+
+```{r}
+stop_pos <- sort(stop_pos)
+
+revstop_pos <- sort(revstop_pos, decreasing = TRUE)
+```
+
+```{r}
+#ORF: Start & Stop Pointers
+k <- 150
+
+stop_pointers <- c(0,0,0)
+
+count <- 0
+
+for (current_start in start_pos) {
+  frame <- (current_start%%3) + 1
+  stop_pointer <- stop_pointers[frame]
+
+  if (stop_pointer <= length(stop_pos) && (stop_pointer == 0 || stop_pos[stop_pointer] < current_start)) {
+  stop_pointer <- stop_pointer + 1
+  
+  while ((stop_pointer <= length(stop_pos)) && (stop_pointer == 0 || stop_pos[stop_pointer] < current_start)) {
+    stop_pointer <- stop_pointer+1
+  }
+  stop_pointer[frame] <- stop_pointer
+  
+  if(stop_pointer <= length(stop_pos)) {
+    if((stop_pos[stop_pointer]+2 - current_start+1)>k ){
+      count <- count+1
+      print(count)
+      print("Frame:")
+      print(frame)
+      print("Start:")
+      print(current_start)
+      print("Stop:")
+      print(stop_pos[stop_pointer])
+      print("Length:")
+      lengths <- c(lengths, (stop_pos[stop_pointer]+2 - current_start+1))
+      print(stop_pos[stop_pointer]+2 - current_start+1)
+      print("Sequence:")
+      print(subseq(sequence, current_start, stop_pos[stop_pointer]+2))
+    }}
+       
+       
+  }
+  }
+```
+
