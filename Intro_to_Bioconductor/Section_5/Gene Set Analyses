@@ -1,0 +1,77 @@
+#!/bin/usr/env Rscript
+
+#Load the Data
+library(GEOquery)
+e = getGEO("GSE34313")[[1]]
+
+pData(e)$condition = pData(e)$characteristics_ch1.2
+levels(pData(e)$condition) = c("dex24","dex4","control")
+table(pData(e)$condition)
+## Note that with ExpressionSets we can access the phenoData columns directly
+## Specifically, note that e$condition is equivalent to pData(e)$condition
+
+#Observe GEO Terms
+names(fData(e))
+fData(e)$GO_ID[1:4]
+
+#compare the control samples to those treated with dexamethasone
+lvls = c("control", "dex4")
+es = e[, e$condition %in% lvls]
+es$condition = factor(es$condition, levels=lvls
+
+#Linear Model DE gene analysis
+library(limma)
+library(qvalue)
+design = model.matrix(~ es$condition)
+fit = lmFit(es, design=design)
+fit = eBayes(fit)
+topTable(fit)[,c(6,7,18,22)]
+
+#What is the p.value for genes in this gene set being down regulated?
+idx = grep("GO:0045454", fData(es)$GO_ID)
+length(idx)
+r1 = roast(es, idx, design)
+r1[1]$p.value$P.Value[1]
+
+# Inference for Multiple gene sets
+library(org.Hs.eg.db)
+org.Hs.egGO2EG
+go2eg = as.list(org.Hs.egGO2EG)
+head(go2eg)
+
+#get matches for each Entrez gene ID to the index in the ExpressionSet
+govector = unlist(go2eg)
+golengths = sapply(go2eg, length)
+head(fData(es)$GENE)
+  
+idxvector = match(govector, fData(es)$GENE);table(is.na(idxvector))
+
+##This is the organized list of indexes for genes per GO term:
+idx = split(idxvector, rep(names(go2eg), golengths))
+
+##We can see the genes like this:
+go2eg[[1]]
+fData(es)$GENE[idx[[1]]]
+
+#Clean list and remove NAs
+idxclean = lapply(idx, function(x) x[!is.na(x)])
+idxlengths = sapply(idxclean, length)
+idxsub = idxclean[idxlengths > 10]
+length(idxsub)
+
+# How many genes does this term have?
+r2 = mroast(es, idxsub, design)
+r2[which.max(r2$PropUp),1]
+
+#what is the GO term has the largest proportion of upregulated genes
+size = sapply(idxsub, length)
+idxsub2 = idxsub[size>=50]
+r3 = mroast(es, idxsub2, design)
+rownames(r3[which.max(r3$PropUp),])
+
+#Use select() and the GO.db annotation package to find the TERM for this GO ID.
+library(GO.db)
+columns(GO.db)
+keytypes(GO.db)
+select(GO.db, keys="GO:0017147",columns="TERM") 
+
