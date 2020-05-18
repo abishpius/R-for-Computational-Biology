@@ -1,0 +1,104 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Comparative Genomics
+
+```{r}
+setwd("C:/Users/abish/Documents/Online Learning/R Learning/Bioconductor")
+```
+
+ install the biomaRt package from Bioconductor
+```{r}
+BiocManager::install('biomaRt')
+```
+
+Biomart lets you access ENSEMBLE genomes directly and download relevant information, we can see a list of available databases (marts) using this command
+```{r}
+library(biomaRt)
+listMarts()
+```
+
+```{r}
+ensembl=useMart("ensembl")
+```
+
+```{r}
+listDatasets(ensembl)
+```
+
+load the data for the Chimpanzee and the Gorilla datasets
+```{r}
+Chimpanzee <- useDataset("ptroglodytes_gene_ensembl", mart = ensembl)
+
+Gorilla <- useDataset("ggorilla_gene_ensembl", mart = ensembl)
+```
+
+```{r}
+ChimpanzeeAttributes <- listAttributes(Chimpanzee)
+
+GorillaAttributes <- listAttributes(Gorilla)
+```
+
+```{r}
+GorillaAttributes
+```
+
+The ensemble Gene ID is a unique gene identifier and can be used to indicate a specific gene regardless of which species it is in – let's use that in our analysis.
+```{r}
+ChimpanzeeGenes <- getBM(attributes = c("ensembl_gene_id", "gene_biotype"), mart=Chimpanzee)
+
+GorillaGenes <- getBM(attributes = c("ensembl_gene_id", "gene_biotype"), mart=Gorilla)
+```
+
+parse the gene names and gene types into two separate vectors for each species
+```{r}
+ChimpanzeeGeneNames <- ChimpanzeeGenes[[1]]
+
+ChimpanzeeGeneTypes <- ChimpanzeeGenes[[2]]
+
+GorillaGeneNames <- GorillaGenes[[1]]
+
+GorillaGeneTypes <- GorillaGenes[[2]]
+```
+
+```{r}
+ChimpanzeeTypesTable <- table(ChimpanzeeGeneTypes)
+
+GorillaTypesTable <- table(GorillaGeneTypes)
+```
+
+```{r}
+ChimpanzeeTypesTable
+```
+
+compare the number of protein coding genes in gorilla vs chimpanzees.
+```{r}
+ChimpanzeeProteins <- ChimpanzeeTypesTable["protein_coding"]
+
+GorillaProteins <- GorillaTypesTable["protein_coding"]
+```
+
+Let's see if we can identify which genes Chimpanzees and Gorillas have in common.
+
+One of the attributes in the Chimpanzee dataset is called "ggorilla_homolog_ensembl_gene" this is the gene identifier for the gorilla gene that is orthologous to the chimpanzee gene.
+
+First let's just see how many genes Chimpanzees have that have gorilla orthologs
+
+```{r}
+ChimpGGNum <- getBM(attributes = "ggorilla_homolog_ensembl_gene", mart = Chimpanzee)
+```
+
+```{r}
+ChimpanzeeGG <- getBM(attributes = c("ensembl_gene_id","ggorilla_homolog_ensembl_gene"), mart = Chimpanzee)
+```
+
+```{r}
+GorillaCNum <- getBM(attributes = "ptroglodytes_homolog_ensembl_gene", mart = Gorilla)
+
+GorillaC <- getBM(attributes = c("ensembl_gene_id","ptroglodytes_homolog_ensembl_gene"), mart = Gorilla)
+```
+
+The GorillaCNum tells us that gorillas have almost 27k genes in common with Chimpanzees
+The GorillaC table lists them by ID
