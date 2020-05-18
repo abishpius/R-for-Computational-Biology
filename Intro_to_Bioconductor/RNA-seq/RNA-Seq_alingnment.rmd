@@ -1,0 +1,46 @@
+#Align TCGATCCATCGATTGGAAGGCACTGATCTGGACTGTCAGGTTGGTGGTCTTATTTGCAAGTCC to chromosome 16 of the human genome
+
+library(BSgenome.Hsapiens.UCSC.hg19)
+matchPattern("TCGATCCATCGATTGGAAGGCACTGATCTGGACTGTCAGGTTGGTGGTCTTATTTGCAAGTCC", Hsapiens$chr16)
+
+#Align TCGCTCTCTCCGTTTCAGGGAAGCCAGCAAGTCCAGTCCGAGTAATGAAGGGCGGGGAGCAGG to chromosome 16 negative strand
+library(BSgenome.Hsapiens.UCSC.hg19)
+matchPattern(reverseComplement(DNAString("TCGCTCTCTCCGTTTCAGGGAAGCCAGCAAGTCCAGTCCGAGTAATGAAGGGCGGGGAGCAGG")), Hsapiens$chr16)
+
+#Transciptome alignment, read tables in
+genes <- read.table("SRR1039508.genes.results", header=TRUE)
+isoforms <- read.table("SRR1039508.isoforms.results", header=TRUE)
+
+
+#Using split() and sapply(), confirm that the FPKM column in genes is the sum of the FPKM column in isoforms
+fpkm.per.gene <- split(isoforms$FPKM, isoforms$gene_id)
+head(sapply(fpkm.per.gene, sum))
+head(genes$FPKM)
+     #or
+     library(dplyr)
+     isoforms %>% group_by(gene_id) %>% summarize(sum = sum(FPKM)) 
+
+#Make a histogram of the FPKM values in genes.
+genes2 <- genes[genes$FPKM > 0,]
+genes2$gene_id <- droplevels(genes2$gene_id)
+isoforms2 <- isoforms[isoforms$gene_id %in% genes2$gene_id,]
+isoforms2$gene_id <- droplevels(isoforms2$gene_id)
+stopifnot(all(genes2$gene_id == levels(isoforms2$gene_id))) #check
+
+#What is the median FPKM of the genes with positive FPKM (i.e. the genes2 table)?
+median(genes2$FPKM)
+
+#For what ratio of genes is the maximum IsoPct higher than 95?
+isoforms2 %>% group_by(gene_id) %>% summarize(max.iso = max(IsoPct)) %>% summarize(answer = mean(max.iso > 95))
+
+#relationship between total expression and the maximum IsoPct for each gene
+boxplot(split(log10(genes2$FPKM), cut(max.iso, 5)), xlab="max.iso", ylab="log10 FPKM")
+
+#Calculate the number of isoforms per gene, and plot the maximum IsoPct against the number of isoforms:
+num.iso <- as.numeric(table(isoforms2$gene_id))
+plot(num.iso, max.iso)
+
+#Make a barplot of the number of genes according to number of isoforms:
+barplot(table(num.iso))
+barplot(table(num.iso[num.iso < 15]))
+
