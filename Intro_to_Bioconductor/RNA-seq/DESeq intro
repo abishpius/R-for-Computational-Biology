@@ -1,0 +1,36 @@
+#!/bin/usr/env Rscript
+
+#Load the data
+download.file("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/wang_eset.RData", "wang_eset.RData")
+load("wang_eset.RData")
+library(Biobase)
+count.matrix <- exprs(wang.eset)[,10:21]
+col.data <- pData(wang.eset)[10:21,]
+library(DESeq2)
+dds <- DESeqDataSetFromMatrix(count.matrix, col.data, design=~cell.type) # Subset of the data
+dds$cell.type #tissue information
+
+#What tissue has the highest size factor
+dds = estimateSizeFactors(dds)
+dds$cell.type[ which.max(sizeFactors(dds)) ]
+
+#Create a PCA
+vsd = varianceStabilizingTransformation(dds, blind=FALSE)
+plotPCA(vsd, intgroup="cell.type")
+
+#Scatterplot matrix of some of the samples' transformed counts
+rmeans <- rowMeans(assay(vsd)) # row mean of rlog-transformed data
+idx <- c(1,2,10,7,8,9,12) # pick some samples for visualization
+mat <- assay(vsd)[rmeans > 1,idx] # pull out a small matrix of rlog-transformed counts
+colnames(mat) <- vsd$cell.type[idx] # name the columns of matrix by cell type
+panel.sub <- function(x,y,...) points(cbind(x,y)[sample(length(x),1000),],...)
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)  {
+	usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    r <- abs(cor(x, y))
+    txt <- format(c(r, 0.123456789), digits = digits)[1]
+    txt <- paste0(prefix, txt)
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+pairs(mat, asp=1, col=rgb(0,0,0,.3), lower.panel=panel.cor, upper.panel=panel.sub)
