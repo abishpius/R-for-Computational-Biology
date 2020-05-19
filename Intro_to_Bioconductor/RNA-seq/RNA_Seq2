@@ -1,0 +1,24 @@
+#!/bin/usr/env Rscript
+
+#Load BAM file
+library(pasillaBamSubset)
+bam.file <- untreated3_chr4()
+library(Rsamtools)
+bf <- BamFile(bam.file)
+
+#Obtain ebg
+library(TxDb.Dmelanogaster.UCSC.dm3.ensGene)
+txdb <- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+
+#What chromosome is the first gene in ebg annotated to?
+ebg = exonsBy(txdb, by="gene")
+seqnames(ebg[1])
+
+#subset to only the genes on chromosome 4 
+chr4.idx <- all(seqnames(ebg) == "chr4")
+ebg.sub <- ebg[chr4.idx]
+
+#Count the fragments in the genes in ebg.sub
+library(GenomicAlignments)
+se = summarizeOverlaps(ebg.sub, bf, ignore.strand=TRUE, singleEnd=FALSE)
+head(assay(se), 1)
