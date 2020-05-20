@@ -34,3 +34,63 @@ panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)  {
     text(0.5, 0.5, txt, cex = cex.cor * r)
 }
 pairs(mat, asp=1, col=rgb(0,0,0,.3), lower.panel=panel.cor, upper.panel=panel.sub)
+
+#Reload data
+load("wang_eset.RData")
+library(Biobase)
+count.matrix <- exprs(wang.eset)[,10:21]
+col.data <- pData(wang.eset)[10:21,]
+library(DESeq2)
+dds <- DESeqDataSetFromMatrix(count.matrix, col.data, design=~cell.type) # Subset of the data
+dds$cell.type #tissue information
+dds$type <- factor(ifelse(dds$cell.type %in% c("cerebellum","mixed.brain"),
+                          "brain", "other"))
+dds$type <- relevel(dds$type, "other")
+
+#design of the DESeqDataSet
+design(dds) <- ~ type
+plotCounts(dds, idx, intgroup="type") #where idx is a number
+
+#What is the ENSEMBL ID of the gene with the smallest adjusted p-value
+dds = DESeq(dds)
+res = results(dds)
+rownames(res)[ which.min(res$padj) ]
+
+#How many genes with adjusted p-value less than 0.1 have a positive LFC after threshold = 2
+res2 = results(dds, lfcThreshold=2)
+summary(res2)
+
+#make normalized counts plots for the top 9 genes
+par(mfrow=c(3,3))
+for (i in 1:9) {
+    plotCounts(dds, order(res$padj)[i], intgroup="type")
+}
+par(mfrow=c(1,1))
+
+#Build a vector of the names of the top 20 genes by the test statistic (largest first). The test statistic is the LFC divided by its standard error, and uniquely determines the p-value. So this is the same as asking for the genes with the smallest p-value and positive LFC (so higher expression in brain).
+top <- rownames(res)[head(order(res$stat, decreasing=TRUE), 20)]
+
+#Use org.Hs.eg.db to determine the gene symbol of the top gene in this list
+library(org.Hs.eg.db)                              
+select(org.Hs.eg.db, keys=top, columns="SYMBOL", keytype="ENSEMBL")
+
+#Use org.Hs.eg.db to determine the GENENAME of the top genes.
+select(org.Hs.eg.db, keys=top, columns="GENENAME", keytype="ENSEMBL")
+
+#Download the data
+download.file("http://bowtie-bio.sourceforge.net/recount/ExpressionSets/bottomly_eset.RData", "bottomly_eset.RData")
+load("bottomly_eset.RData")
+library(Biobase)
+#Build DESeqDataSet
+count.matrix <- exprs(bottomly.eset)
+col.data <- pData(bottomly.eset) 
+library(DESeq2)
+dds <- DESeqDataSetFromMatrix(count.matrix, col.data, design=~strain)
+dds$experiment.number <- factor(dds$experiment.number)
+dds$lane.number <- factor(dds$lane.number)
+dds <- estimateSizeFactors(dds)
+
+#Plot the surrogate variables and color by the true batches
+plot(svseq$sv[,1], svseq$sv[,2], col=dds$experiment.number, pch=16)
+legend("bottom", levels(dds$experiment.number), pch=16, col=1:3)
+text(svseq$sv[,1], svseq$sv[,2], 1:ncol(dds), pos=1)
