@@ -94,3 +94,33 @@ dds <- estimateSizeFactors(dds)
 plot(svseq$sv[,1], svseq$sv[,2], col=dds$experiment.number, pch=16)
 legend("bottom", levels(dds$experiment.number), pch=16, col=1:3)
 text(svseq$sv[,1], svseq$sv[,2], 1:ncol(dds), pos=1)
+
+
+#Build a DEXSeq dataset object
+library("pasilla")
+inDir <- system.file("extdata", package="pasilla", mustWork=TRUE)
+countFiles <- list.files(inDir, pattern="fb.txt$", full.names=TRUE)    
+flattenedFile <- list.files(inDir, pattern="gff$", full.names=TRUE) 
+
+sampleTable <- data.frame(
+  row.names = c("treated1", "treated2", "treated3",
+                "untreated1", "untreated2", "untreated3", "untreated4"), 
+  condition = c("knockdown", "knockdown", "knockdown", 
+                "control", "control", "control", "control"))                 
+
+library("DEXSeq")  
+dxd <- DEXSeqDataSetFromHTSeq(countFiles, sampleData=sampleTable, 
+                              design= ~ sample + exon + condition:exon, 
+                              flattenedfile=flattenedFile)
+
+rmean <- rowMeans(counts(dxd))
+dxd2L <- dxd[seqnames(rowRanges(dxd)) == "chr2L" & rmean > 10,] 
+dxd2L <- dxd2L[1:1000,] 
+
+#What is the name of the gene containing the exon with the smallest adjusted p-value for differntial exon usage?
+dxd2L = estimateSizeFactors( dxd2L )                                                                
+dxd2L = estimateDispersions( dxd2L )                                                                
+dxd2L = testForDEU( dxd2L )                                                                         
+dxd2L = estimateExonFoldChanges( dxd2L, fitExpToVar="condition")                                    
+dxr = DEXSeqResults( dxd2L )                                                                        
+rownames(dxr)[ which.min(dxr$padj) ] 
