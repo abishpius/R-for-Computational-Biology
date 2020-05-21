@@ -1,0 +1,45 @@
+data("litG")
+litGnodes <- nodes(litG)
+```
+
+want to see all of the proteins that interact with yeast protein YFL039C
+```{r}
+adj(litG, "YFL039C")
+```
+
+extract the subgraphs, or connected components
+```{r}
+connectedComponents <- connectedComp(litG)
+```
+
+```{r}
+connectedComponents[[1]]
+```
+
+```{r}
+component3 <- connectedComponents[[3]]
+```
+
+```{r}
+component3 <- connectedComponents[[3]]
+subgraph3 <- subGraph(component3, litG)
+```
+
+Plot the PPI
+```{r}
+subgraph3plot <- layoutGraph(subgraph3, layoutType="neato")
+```
+
+```{r}
+renderGraph(subgraph3plot)
+```
+
+```{r}
+numdegrees <- graph::degree(litG)
+```
+```{r}
+meandeg <- mean(numdegrees)
+```
+
+```{r}
+hist(numdegrees, col="red", main = paste("Degree Distribution - Protein Interactions in litG with a mean of " , meandeg))
