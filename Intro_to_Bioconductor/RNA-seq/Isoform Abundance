@@ -1,0 +1,40 @@
+#!/bin/usr/env Rscript
+
+#Creat CuffSet Object
+library(cummeRbund)
+myDir <- system.file("extdata", package="cummeRbund") 
+gtfFile <- system.file("extdata/chr1_snippet.gtf",package="cummeRbund")
+cuff <- readCufflinks(dir=myDir,gtfFile=gtfFile,genome="hg19",rebuild=TRUE)
+
+#Annotation Information
+gene.features <- annotation(genes(cuff))
+head(gene.features)
+isoforms.per.gene <- gene.features[!duplicated(gene.features$isoform_id), c("gene_id","isoform_id")]
+isoforms.per.gene <- isoforms.per.gene[order(isoforms.per.gene$isoform_id),]
+head(isoforms.per.gene)
+
+#Number of isoforms per gene
+gene.tab <- table(isoforms.per.gene$gene_id)
+
+#How many genes have only 1 isoform?
+table(gene.tab)
+
+#FPKM per isoform
+isoform.fpkm <- fpkm(isoforms(cuff))
+head(isoform.fpkm)
+table(isoform.fpkm$sample_name)
+ips <- isoform.fpkm[isoform.fpkm$sample_name == "iPS",]
+hesc <- isoform.fpkm[isoform.fpkm$sample_name == "hESC",]
+stopifnot(all(ips$isoform_id == isoforms.per.gene$isoform_id))
+ips.max <- sapply(split(ips$fpkm, isoforms.per.gene$gene_id), which.max) #highest isoform expression
+head(ips.max)
+
+#Across all genes in our tables, how often is the highest expressed isoform the same one in iPS and hESC cells?
+ips.max = sapply(split(ips$fpkm, isoforms.per.gene$gene_id), which.max)    
+hesc.max = sapply(split(hesc$fpkm, isoforms.per.gene$gene_id), which.max)
+mean(ips.max == hesc.max) 
+
+#Subsetting to only the genes that have more than one isoform, how often is the highest expressed isoform the same one in iPS and hESC cells?
+ips.max = sapply(split(ips$fpkm, isoforms.per.gene$gene_id), which.max)    
+hesc.max = sapply(split(hesc$fpkm, isoforms.per.gene$gene_id), which.max)
+mean((ips.max == hesc.max)[ gene.tab > 1 ]) 
