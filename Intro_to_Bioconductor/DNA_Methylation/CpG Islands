@@ -1,0 +1,80 @@
+#!/bin/usr/env Rscript
+
+#The Bioconductor AnnotationHub package permits us to explore available annotations
+library(AnnotationHub)
+ah <- AnnotationHub()
+head(ah)
+ah <- subset(ah,ah$genome=="hg19") #Subset
+query(ah,"genes")
+
+#What is the record ID used by AnnotationHub for hg19 CpG Islands?
+query(ah, "cpg islands")
+
+#What is the class of the object cgi?
+cgi <- ah[[cgi_id]]
+class(cgi)
+
+
+#How many CpG islands are represented in the object cgi defined in the previous question?
+length(cgi)
+
+#extract the sequence of each CpG Island
+library(BSgenome.Hsapiens.UCSC.hg19)
+cgiseq <- getSeq(Hsapiens, cgi)
+genome(cgi)[1:24]
+genome(Hsapiens)[1:24]
+
+#Compute the proportion of Cs for each island and report the median of these proportions
+median(letterFrequency(cgiseq, "C", as.prob=TRUE))
+# Make a histogram to see they are generally high
+hist(letterFrequency(cgiseq, "C", as.prob=TRUE))
+
+#Compute the proportion of Gs for each island and report the median of these proportions
+median(letterFrequency(cgiseq, "G", as.prob=TRUE))
+# Make a histogram to see they are generally high
+hist(letterFrequency(cgiseq, "G", as.prob=TRUE))
+
+#Compute the expected number of CpGs in each CpG island using the formula. For each island divide the observed number of CpGs by the expected number of CpGs.
+
+#Report the median of these observed to expected ratios
+library(BSgenome.Hsapiens.UCSC.hg19)
+cgiseq= getSeq(Hsapiens,cgi)
+
+res = alphabetFrequency(cgiseq)
+L = rowSums(res)
+cprop = res[,"C"]/L
+gprop = res[,"G"]/L
+expected = L * cprop * gprop
+observed = vcountPattern("CG",cgiseq)
+cpgoe=observed/expected
+median(cpgoe)
+## We can look at a histogram
+hist(cpgoe)
+abline(v=1,col=2)
+##because these are ratios, better to look at log
+hist(log2 ( cpgoe ))
+abline(v=0,col=2)
+
+#To look at regions that are not islands let's shift the islands we have by 20,000 nucleotides
+#restrict our analysis to the mapped chromosomes
+chr2use <- seqlevels(cgi)[1:24]
+index = which( seqnames(cgi) %in% chr2use)
+noncgi <- shift(cgi[index],20000)
+library(BSgenome.Hsapiens.UCSC.hg19)
+noncgiseq <- getSeq(Hsapiens,noncgi)
+
+nullres <- alphabetFrequency(noncgiseq)
+keepIndex <- nullres[,"G"]>0 &  nullres[,"C"]>0 & nullres[,"N"]==0
+nullres <- nullres[keepIndex,]
+noncgiseq <- noncgiseq[keepIndex]
+
+#Report the median observed to expected ratio for these regions
+L2 = rowSums(nullres)
+cprop2 = nullres[,"C"]/L2
+gprop2 = nullres[,"G"]/L2
+expected2 = L2 * cprop2 * gprop2
+observed2 = vcountPattern("CG",noncgiseq)
+noncgioe=observed2/expected2
+median(noncgioe)
+## We can compare them
+boxplot(gpcoe,noncgioe,cpgoe)
