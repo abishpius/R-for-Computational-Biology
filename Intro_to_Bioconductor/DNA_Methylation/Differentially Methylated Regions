@@ -1,0 +1,74 @@
+#!/bin/usr/env Rscript
+
+#Load the Data
+library(devtools)
+install_github("genomicsclass/coloncancermeth")
+library(coloncancermeth)
+data(coloncancermeth)
+dim(meth)
+dim(pd)
+print(gr)
+
+#How many are cancer samples
+table(pd$Status)
+
+#Which column of the meth matrix is a cancer sample and has BCR patient barcode "TCGA-A6-4107"?
+## identify colum with BCR barcode
+grep("barcode", vnames(pd), value = TRUE)
+## determine column with barcode match and cancer status 
+which(pd$bcr_patient_barcode == "TCGA-A6-4107" 
+        & pd$Status == "cancer")
+
+
+#Use the methylation profiles to compute a Euclidean distance between each sample
+d <- dist(t(meth))
+
+#create an MDS plot
+mds <- cmdscale(d)
+cols <- as.numeric(pd$Status)
+plot(mds,col=cols)
+legend("topleft",levels(pd$Status),col=1:2,pch=1)
+
+#What proportion of CpG sites have q-values smaller than 0.05?
+library(limma)
+X <- model.matrix(~pd$Status)
+fit <- lmFit(meth,X)
+eb <- eBayes(fit)
+pvals <- eb$p.value[,2]
+
+#What proportion of the CpGs showing statistically significant differences
+qvals = qvalue(pvals)$qvalue
+index = which(qvals<=0.05)
+diffs = fit$coef[index,2]
+mean(diffs > 0)
+
+#What proportion of the differentially methylated CpGs are inside islands?
+library(AnnotationHub)
+ah <- AnnotationHub()
+cgi <- ah[["AH5086"]]
+mean(gr[index]%over%cgi)
+islands=gr[index]%over%cgi
+hypermethylated=fit$coef[index,2]>0
+prop.table( table(islands,hypermethylated) )
+
+#use the bumphunter package to separate the differentially methylated CpGs intro groups
+library(bumphunter)
+X <- model.matrix(~pd$Status)
+chr <- as.character(seqnames(gr))
+res <- bumphunter(meth,X,chr=chr,pos=start(gr),cutoff=0.1)
+
+#filter by region size
+dmrs <- res$table[ res$table$L>=3, ]
+dmrs <- makeGRangesFromDataFrame(dmrs)
+
+#What proportion of DMRs overlap a CpG island
+##dmrs and cgis are defined above
+map = distanceToNearest(dmrs,cgi)
+d = mcols(map)$distance
+mean(d==0)
+
+#What proportion of DMRs are within 2000 basepairs from a CpG island, but do not overlap?
+map = distanceToNearest(dmrs,cgi)
+d = mcols(map)$distance
+mean(d>0 & d<=2000)
+
