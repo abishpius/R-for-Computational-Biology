@@ -1,0 +1,100 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# eQTL Analysis
+In addition to GWAS analysis, we can use genotype and phenotype data to look at Expression Quantitative Traits Loci, or eQTLs.
+qeQTLs are regions of the genome containing DNA sequence variants that influence the expression level of one or more genes.
+qFor this analysis we will use a package called Matrix eQTL, which has been optimized for speed – an analysis that would take days on another package (e.g. PLINK) will run in minutes in Matrix eQTL.
+```{r}
+library(MatrixEQTL)
+```
+
+```{r}
+useModel = modelLINEAR # modelANOVA, modelLINEAR, or modelLINEAR_CROSS
+```
+
+```{r}
+pvOutputThreshold = 1e-2
+```
+
+```{r}
+errorCovariance = numeric()
+```
+
+```{r}
+snps <- SlicedData$new()
+snps$fileDelimiter = "\t"
+snps$fileOmitCharacters= "NA"
+snps$fileSkipRows = 1
+snps$fileSkipColumns = 1
+snps$fileSliceSize = 2000
+snps$LoadFile("SNP.txt")
+```
+```{r}
+gene = SlicedData$new()
+gene$fileDelimiter = "\t"      
+gene$fileOmitCharacters = "NA" 
+gene$fileSkipRows = 1          
+gene$fileSkipColumns = 1       
+gene$fileSliceSize = 2000      
+gene$LoadFile("GE.txt")
+```
+
+```{r}
+cvrt = SlicedData$new()
+cvrt$fileDelimiter = "\t"      
+cvrt$fileOmitCharacters = "NA" 
+cvrt$fileSkipRows = 1          
+cvrt$fileSkipColumns = 1       
+cvrt$LoadFile("Covariates.txt")
+```
+
+```{r}
+me <- Matrix_eQTL_engine(snps = snps, gene= gene, cvrt = cvrt, output_file_name = "outfile.txt", pvOutputThreshold = pvOutputThreshold, useModel = useModel, errorCovariance = errorCovariance, verbose = TRUE, pvalue.hist = FALSE, min.pv.by.genesnp = FALSE, noFDRsaveMemory = FALSE)
+```
+
+```{r}
+cat('Analysis done in: ', me$time.in.sec, ' seconds', '\n')
+cat('Detected eQTLs:', '\n')
+show(me$all$eqtls)
+```
+
+```{r}
+output_file_name_cis = tempfile()
+
+output_file_name_tra = tempfile()
+```
+
+```{r}
+pvOutputThreshold_cis = 1e-2
+
+pvOutputThreshold_tra = 1e-2
+```
+
+```{r}
+cisDist = 1e6
+```
+
+# Quality Control
+
+```{r}
+snpspos = read.table("snpsloc.txt", header = TRUE, stringsAsFactors = FALSE)
+
+genepos = read.table("geneloc.txt", header = TRUE, stringsAsFactors = FALSE)
+
+```
+
+```{r}
+me <- Matrix_eQTL_main(snps = snps, gene = gene, cvrt = cvrt, output_file_name = output_file_name_tra, pvOutputThreshold = pvOutputThreshold_tra, useModel = useModel, errorCovariance = errorCovariance, verbose = TRUE, output_file_name.cis = output_file_name_cis, pvOutputThreshold.cis = pvOutputThreshold_cis, snpspos = snpspos, genepos = genepos, cisDist = cisDist, pvalue.hist = "qqplot", min.pv.by.genesnp = FALSE, noFDRsaveMemory = FALSE)
+```
+
+```{r}
+show(me$cis$eqtls)
+cat('Detected distant eQTLS:', '\n')
+show(me$trans$eqtls)
+plot(me)
+```
+
+Our plot is not very symmetric and it seems skewed towards a local distribution, meaning that SNP/Gene pairs that are closer tend to show more association.
