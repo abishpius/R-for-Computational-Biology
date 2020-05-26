@@ -1,0 +1,221 @@
+#!/bin/usr/env Rscript
+
+library(minfi)
+grset <- getGenomicRatioSetFromGEO("GSE32148")
+
+##after download  you can save the object like this:
+save(grset,file="grset.rda")
+##then to load later
+load("grset.rda")
+
+library(minfi)
+library(IlluminaHumanMethylation450kmanifest)
+library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+
+#How many samples are represented in this table?
+targets <- read.delim(file.path(path, "targets.txt"), as.is=TRUE)
+nrow(targets)
+
+#How many samples are from normal colon samples?
+sum(targets$Tissue=="colon" & targets$Status=="normal")
+##or look here
+table(targets$Tissue,targets$Status)
+
+# perform a differential methylation analysis using normal breast and colon samples from TCGA
+index <- which(targets$Status=="normal" & targets$Tissue%in%c("colon", "breast"))
+targets <- targets[index, ]
+library(minfi)
+dat <- read.metharray.exp(base=path, targets=targets, verbose=TRUE)
+
+class(dat)
+## preprocess the data
+dat <- preprocessIllumina(dat)
+class(dat)
+## assign locations to each CpG
+dat <- mapToGenome(dat)
+class(dat)
+## precompute methylation values from U and M values
+dat <- ratioConvert(dat, type="Illumina")
+class(dat)
+
+# look at the distribution of each sample
+library(rafalib)
+mypar(1,1)
+##extract methylation values
+y <- getBeta(dat)
+shist(y)
+
+mds <- cmdscale(dist(t(y)))
+tissue <- as.factor(pData(dat)$Tissue)
+plot(mds, col=tissue)
+
+library(limma)
+##create design matrix
+tissue = as.factor(pData(dat)$Tissue)
+X = model.matrix(~tissue)
+##extract methylation values
+y = getBeta(dat)
+## obtain effect sizes and pvals with limma
+fit = lmFit(y,X)
+
+#Find the CpG with the largest effect size when comparing the normal breast and colon samples.
+#Which chromosome is this CpG on? What is the position of this CpG?
+index = which.max(abs( fit$coef[,2]))
+seqnames(dat)[index]
+start(dat)[index]
+
+#Now we will use the qvalue() function to determine the q-value for the CpG
+library(qvalue)
+
+##create design matrix
+tissue <- as.factor(pData(dat)$Tissue)
+X <- model.matrix(~tissue)
+
+##extract methylation values
+y <- getBeta(dat)
+
+## obtain effect sizes and pvals with limma
+fit <- lmFit(y,X)
+eb <- eBayes(fit)
+
+## obtain q-values
+qvals <- qvalue(eb$p.value[,2])$qvalue
+
+##When reporting such small p-values 
+##there is no need to show exactly how small it is
+## so we can say < 10^-6
+index = which.max(abs( fit$coef[,2]))
+qvals[index]
+
+#Create a plot showing the methylation values across all of the samples at these CpGs
+library(rafalib)
+mypar(3,1)
+index = which.max(abs( fit$coef[,2]))
+gr=granges(dat)[index]+5000
+index=which(granges(dat)%over%gr)
+pos= start(dat)[index]
+
+matplot(pos,y[index,],ylab="Methylation",col=as.numeric(tissue))
+
+plot(pos, fit$coef[index,2],ylab="Effect Size")
+
+plot(pos, -log10(qvals[index]) ,ylab="-log10 q-value")
+
+#Create a plot showing the methylation values across all of the  ordered samples at these CpGs
+o <- order(abs(fit$coef[,2]), decreasing = TRUE)[1:10]
+library(rafalib)
+mypar(3,1)
+o <- order(abs(fit$coef[,2]), decreasing = TRUE)[1:10]
+for(i in o) {
+  index <- i
+  gr=granges(dat)[index]+5000
+  index=which(granges(dat) %over% gr)
+  po s<- start(dat)[index]
+
+  matplot(pos, y[index,,drop=FALSE], ylab="Methylation", col=as.numeric(tissue))
+  plot(pos, fit$coef[index,2], ylab="Effect Size")
+  plot(pos, -log10(qvals[index]), ylab="-log10 q-value")
+}
+
+#New Data
+index <- which(seqnames(dat)=="chr15")
+dat2 <- dat[index,]
+library(doParallel)
+ncores <- detectCores()
+registerDoParallel(cores = ncores)
+##create design matrix
+tissue <- as.factor(pData(dat)$Tissue)
+X <- model.matrix(~tissue)
+
+##extract methylation values
+set.seed(1)
+res <- bumphunter(dat2,X,cutoff=0.1,B=100)
+head(res$tab)
+
+#According to these results, how many regions achieve an FWER lower than 0.05?
+sum(res$table$fwer < 0.05)
+
+##fit and qvals were defined in a previous answer
+index <- which(qvals < 0.05 & abs(fit$coef[,2]) > 0.5 & seqnames(dat)=="chr15")
+tab <- res$tab[ res$tab$L >= 3,]
+tab <- makeGRangesFromDataFrame(tab)
+
+#What proportion of the CpGs indexed by index are inside regions found in tab?
+mean(granges(dat[index,])%over%tab)
+
+library(AnnotationHub)
+cgi <- AnnotationHub()[["AH5086"]]
+tab <- res$tab[res$tab$fwer <= 0.05,]
+tab <- makeGRangesFromDataFrame(tab)
+
+#What proportion of the regions represented in tab do not overlap islands, but overall CpG islands shores (within 2000 basepairs) ?
+map <- distanceToNearest(tab,cgi)
+d <- mcols(map)$distance
+mean(d<=2000 & d>0)
+
+#Load New Data
+library(minfi)
+grset <- getGenomicRatioSetFromGEO("GSE32148")
+class(grset)
+
+##examine the outcome of this:
+pData(grset)[1,]
+## note age is here
+pData(grset)[1,"characteristics_ch1.1"]
+
+#Wrangling
+age <- pData(grset)$characteristics_ch1.1
+age <- as.character(age)
+age[grep("N/A",age)] <-  NA
+age <- as.numeric(gsub("age \(y\):\ ","",age))
+group <- rep("normal",nrow(pData(grset)))
+group[grepl("ulcerative",pData(grset)[,1])]="ulcerative"
+group[grepl("Crohn",pData(grset)[,1])]="crohn"
+group <- factor(group,levels=c("normal","ulcerative","crohn"))
+keep <- which(rowSums(is.na(getBeta(grset)))==0 & 
+               !seqnames(grset)%in%c("chrX","chrY"))
+##create a new object 
+grset2 <- grset[keep,]
+
+y <- getBeta(grset2)
+mds <- cmdscale( dist( t(y)))
+mypar(1,1)
+col <- ifelse(age>40, 1, 2)
+plot(mds,pch=as.numeric(group),col=col)
+legend("bottomleft",levels(group),pch=seq_along(group))
+
+#search for differentially methylated blocks
+library(minfi)
+path <- "Yourpath"    # same as CpGIslandShores assessment
+targets <- read.delim(file.path (path,"targets.txt"),as.is=TRUE)
+index <- which( targets$Tissue=="colon")
+targets <- targets[index,]
+dat <- read.metharray.exp(base=path, targets=targets, verbose=TRUE)
+dat <- preprocessIllumina(dat)
+dat <- mapToGenome(dat)
+cdat <- cpgCollapse(dat)
+
+#How many regions are represented in teh collapsed object
+nrow(cdat$obj)
+
+#see the type of regions that are represented in this collapsed object:
+head(granges(cdat$obj))
+
+#What proportion of the regions are OpenSea regions
+prop.table(table(mcols( granges(cdat$obj))$type))
+
+#
+status <- factor(pData(cdat$obj)$Status,
+                 level=c("normal","cancer"))
+X <- model.matrix(~status)
+res <- blockFinder(cdat$obj,X,cutoff=0.05)
+head(res$table)
+
+#What proportion of the blocks reported in res$table are hypomethyated in cancer
+tab=makeGRangesFromDataFrame(res$table)
+index= granges(cdat$obj)%over% (tab[1]+10000)
+pos=start(cdat$obj)[index]
+col=as.numeric(status)
+matplot(pos,getBeta(cdat$obj)[index,],col=col,pch=1,cex=0.5)
+##and these are the estimated difference
+plot(pos,res$fitted[index])
