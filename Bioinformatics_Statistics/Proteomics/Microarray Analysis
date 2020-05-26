@@ -1,0 +1,82 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Microarray Analysis
+
+
+A Microarray is easily one of the densest ways of collecting bioinformatics data, whether it is Protein or DNA-based.
+qOne of the most common types of arrays is in an expression analysis, where the "spots" on the
+"chip" represent different genes, and mRNA isolated from an experimental sample is "washed" over this:
+üThe RNA binds to its complementary DNA.
+üProbes on the RNA that can be used to detect binding levels, e.g. "spot intensity" or expression  levels.
+qA modern microarray can contain thousands – even more than a million – separate "spots" to detect specific probes.
+
+
+```{r}
+plot(cars)
+```
+
+
+```{r}
+BiocManager::install("affy")
+
+BiocManager::install("limma")
+
+library(affy)
+
+library(limma)
+```
+
+```{r}
+affy.data <- ReadAffy()
+```
+```{r}
+eset.mas5 <- mas5(affy.data)
+```
+
+```{r}
+exprSet.nologs <- exprs(eset.mas5)
+```
+
+```{r}
+colnames(exprSet.nologs)
+```
+
+```{r}
+colnames(exprSet.nologs) <- c("brain.1", "brain.2", "fetal.brain.1", "fetal.brain.2", "fetal.liver.1",
+
+ "fetal.liver.2", "liver.1", "liver.2")
+```
+
+```{r}
+exprSet <- log(exprSet.nologs, 2)
+```
+
+
+```{r}
+write.table(exprSet, file="Su_mas5_matrix.txt", quote=F, sep="\t")
+```
+
+```{r}
+data.mas5calls <- mas5calls(affy.data)
+
+data.mas5calls.calls <- exprs(data.mas5calls)
+```
+
+#One of the additional data file types generated from the Affymetrix (or really any) system is the processed image data from the actual microarray – this contains the color/intensity data for each spot on the array.
+
+```{r}
+brain.fetalbrain.2color <- read.maimages("brain.fetalbrain.2color.data__1_", columns=list(G="brain.1", R="fetal.brain.1", Gb="bg1", Rb="bg2"))
+```
+
+```{r}
+brain.fetalbrain.2color.loess <- normalizeWithinArrays(brain.fetalbrain.2color, method="loess")
+```
+
+```{r}
+plotMA(brain.fetalbrain.2color)
+plotMA(brain.fetalbrain.2color.loess)
+```
+
