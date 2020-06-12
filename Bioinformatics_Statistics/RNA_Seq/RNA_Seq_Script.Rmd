@@ -1,0 +1,83 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+RNA Sequencing
+
+```{r}
+BiocManager::install("edgeR")
+```
+
+```{r}
+BiocManager::install("Glimma")
+```
+```{r}
+library(edgeR)
+
+library(limma)
+
+library(Glimma)
+
+library(org.Mm.eg.db)
+```
+
+```{r}
+library(gplots)
+
+library(RColorBrewer)
+```
+
+gene count information for each sample
+```{r}
+seqdata <- read.delim("GSE60450_Lactation-GenewiseCounts.txt", stringsAsFactors = FALSE)
+
+```
+metadata about our samples
+```{r}
+sampleinfo <- read.delim("SampleInfo.txt")
+```
+
+make a new dataset that contains only the counts, for manipulation – we need to remove the first two columns from seqdata using this command
+```{r}
+countdata <- seqdata[,-(1:2)]
+```
+```{r}
+rownames(countdata) <- seqdata[,1]
+```
+
+use the substr command to extract just a portion of the characters from each of the
+column names in seqdata
+```{r}
+colnames(countdata) <- substr(colnames(countdata),start=1,stop=7)
+```
+
+extract the CPMs (counts per million reads) and examining them
+```{r}
+myCPM <- cpm(countdata)
+```
+
+filter out anything with a CPM of less than 0.5
+```{r}
+thresh <- myCPM > 0.5
+```
+
+quick statistics to see how many genes passed through our filter
+```{r}
+table(rowSums(thresh))
+```
+
+keep only those where the genes are TRUE in 2 or more samples
+```{r}
+keep <- rowSums(thresh) >= 2
+
+counts.keep <- countdata[keep,]
+```
+
+```{r}
+plot(myCPM[,1],countdata[,1])
+```
+```{r}
+plot(myCPM[,1],countdata[,1],ylim=c(0,50),xlim=c(0,3))
+```
+
