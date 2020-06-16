@@ -1,0 +1,11 @@
+Gene_ID,Gene_full_name,Resistant_or_Susceptible_strains,Relative_expression_levels,SD
+Hspa5,Heat shock 70kD protein 5 (glucose-regulated protein),Resistant,1.717,1.016
+Notch1,Notch gene homolog 1 (Drosophila),Resistant,2.005,1.192
+Traf1,Tnf receptor-associated factor 1,Resistant,1.826,0.596
+Traf2,Tnf receptor-associated factor 2,Resistant,2.369,2.694
+Sirpa,Signal-regulatory protein a ,Resistant,4.092,6.024
+Hspa5,Heat shock 70kD protein 5 (glucose-regulated protein),Susceptible,4.04,2.587
+Notch1,Notch gene homolog 1 (Drosophila),Susceptible,10.424,7.833
+Traf1,Tnf receptor-associated factor 1,Susceptible,5.995,0.733
+Traf2,Tnf receptor-associated factor 2,Susceptible,2.421,0.844
+Sirpa,Signal-regulatory protein a ,Susceptible,1.607,1.034

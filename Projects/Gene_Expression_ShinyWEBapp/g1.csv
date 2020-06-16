@@ -1,0 +1,31 @@
+Gene_ID,Gene_full_name,Resistant_or_Susceptible_strains,Relative_expression_levels,SD
+Anapc2,Anaphase promoting complex subunit 2,Resistant,0.551,0.022
+Asb6,Ankyrin repeat and SOCS box-containing protein 6,Resistant,0.573,0.482
+Fbxw2,F-box and WD-40 domain protein 2,Resistant,0.93,0.384
+Gpr107,G protein-coupled receptor 107,Resistant,0.866,0.481
+Il1a,Interleukin 1 a ,Resistant,0.739,0.045
+Il1rn,Interleukin 1 receptor anatagonist,Resistant,0.851,0.384
+Mapkap1,Mitogen-activated protein kinase associated protein 1,Resistant,0.732,0.199
+Noxa1,NADPH oxidase activator 1,Resistant,0.27,0.164
+Phpt1,Phosphohistidine phosphatase 1,Resistant,0.229,0.133
+Ptges,Prostaglandin E synthase,Resistant,0.417,0.101
+Ptges2,Prostaglandin E synthase 2,Resistant,0.913,0.553
+Rab14,"RAB14, member RAS oncogene family",Resistant,0.704,0.268
+Sh2d3c,SH2 domain containing 3C,Resistant,0.162,0.102
+Phyhd1,Phytanoyl-CoA dioxygenase domain containing 1,Resistant,0.806,0.727
+Urm1,Ubiquitin related modifier 1 homolog (S. cerevisiae),Resistant,0.834,0.625
+Anapc2,Anaphase promoting complex subunit 2,Susceptible,1.475,0.691
+Asb6,Ankyrin repeat and SOCS box-containing protein 6,Susceptible,2.3,1.801
+Fbxw2,F-box and WD-40 domain protein 2,Susceptible,1.159,0.268
+Gpr107,G protein-coupled receptor 107,Susceptible,2.196,0.758
+Il1 a,Interleukin 1 a ,Susceptible,54.687,0.011
+Il1rn,Interleukin 1 receptor anatagonist,Susceptible,55.909,0.274
+Mapkap1,Mitogen-activated protein kinase associated protein 1,Susceptible,1.189,0.46
+Noxa1,NADPH oxidase activator 1,Susceptible,1.086,0.151
+Phpt1,Phosphohistidine phosphatase 1,Susceptible,0.714,0.155
+Ptges,Prostaglandin E synthase,Susceptible,5.046,0.679
+Ptges2,Prostaglandin E synthase 2,Susceptible,1.456,0.122
+Rab14,"RAB14, member RAS oncogene family",Susceptible,1.411,0.711
+Sh2d3c,SH2 domain containing 3C,Susceptible,1.009,0.389
+Phyhd1,Phytanoyl-CoA dioxygenase domain containing 1,Susceptible,1.288,0.288
+Urm1,Ubiquitin related modifier 1 homolog (S. cerevisiae),Susceptible,1.277,0.309
